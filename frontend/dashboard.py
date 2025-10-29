@@ -25,16 +25,17 @@ refresh_interval = st.sidebar.slider("Refresh every (sec)", 2, 15, 5)
 plt.style.use("dark_background")
 
 def set_dark_theme(ax):
-    """Apply consistent dark theme style."""
-    ax.set_facecolor("#0E1117")
-    ax.figure.set_facecolor("#0E1117")
+    """Apply transparent dark theme style."""
+    ax.set_facecolor("none")
+    ax.figure.patch.set_alpha(0.0)
     ax.tick_params(colors="#FAFAFA", which="both")
     for spine in ax.spines.values():
-        spine.set_color("#FAFAFA")
+        spine.set_color("#777777")
     ax.xaxis.label.set_color("#FAFAFA")
     ax.yaxis.label.set_color("#FAFAFA")
     ax.title.set_color("#FAFAFA")
-    ax.grid(True, color="#333333", linestyle="--", linewidth=0.5)
+    ax.grid(True, color="#444444", linestyle="--", linewidth=0.4, alpha=0.6)
+
 
 while True:
     try:
@@ -58,36 +59,40 @@ while True:
 
         df = pd.DataFrame(st.session_state.data)
 
+        # ✅ Only show last 5 readings in graph
+        df_plot = df.tail(5)
+
         with placeholder.container():
             col1, col2 = st.columns([2, 1])
 
             with col1:
-                st.subheader("📊 Live Moisture Graph (Dark Theme)")
+                st.subheader("📊 Live Moisture Graph (Last 5 Readings)")
 
                 fig, ax = plt.subplots(figsize=(12, 7))
 
-                # --- Dark theme setup
+                # --- Transparent theme setup
                 set_dark_theme(ax)
 
-                # --- Moisture line with glowing color
-                ax.plot(df["time"], df["moisture"], color="#00BFFF", linewidth=2.5, marker="o", label="Moisture")
+                # --- Moisture line (only last 5 points)
+                ax.plot(df_plot["time"], df_plot["moisture"], color="#00BFFF", linewidth=2.5, marker="o", label="Moisture")
 
                 # --- Pump ON/OFF indicators
-                on_points = df[df["pump"] == "ON"]
-                off_points = df[df["pump"] == "OFF"]
+                on_points = df_plot[df_plot["pump"] == "ON"]
+                off_points = df_plot[df_plot["pump"] == "OFF"]
                 ax.scatter(on_points["time"], on_points["moisture"], color="#00FF7F", s=45, label="Pump ON", zorder=5)
                 ax.scatter(off_points["time"], off_points["moisture"], color="#FF4500", s=60, label="Pump OFF", zorder=5)
 
                 # --- Labels and formatting
                 ax.set_xlabel("Time (HH:MM)", fontsize=8)
                 ax.set_ylabel("Soil Moisture Reading", fontsize=8)
-                ax.set_title("Live Soil Moisture with Pump Activity", fontsize=6, weight="bold")
+                ax.set_title("Live Soil Moisture (Last 5 Readings)", fontsize=6, weight="bold")
 
                 ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
                 fig.autofmt_xdate(rotation=30)
-                ax.legend(facecolor="#0E1117", edgecolor="#0E1117", labelcolor="#FAFAFA")
+                ax.legend(facecolor="none", edgecolor="none", labelcolor="#FAFAFA")
 
-                st.pyplot(fig)
+                # ✅ Transparent render
+                st.pyplot(fig, transparent=True, use_container_width=True)
 
             with col2:
                 st.metric("Current Moisture", f"{moisture:.0f}" if moisture else "--")
